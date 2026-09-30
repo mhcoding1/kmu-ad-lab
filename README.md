@@ -99,7 +99,20 @@ Unterhalb von `Admin_Accounts` wurden dedizierte administrative Verwaltungsebene
 ![Kerberosrichtlinien](screenshots/05_Kerberosrichtlinien.png)
 
 
-### 3. 
+
+### 3. Netzwerk-Härtung & Protokoll-Absicherung
+
+Diese Maßnahme dient der Abwehr von Man-in-the-Middle-Angriffen (wie *Responder* / Credential Poisoning) und zur Deaktivierung veralteter, anfälliger Schnittstellen. Dafür wurden folgende Richtlinien domänenweit erzwungen:
+
+- **LLMNR (Link-Local Multicast Name Resolution) & mDNS:** Vollständig deaktiviert (`DNS-Client -> Multicastnamensauflösung deaktivieren`), um das Abfangen von Authentifizierungs-Anfragen im lokalen Netzwerk zu unterbinden.
+
+![LLMNR](screenshots/06_LLMNR.png)
+
+
+- **NBT-NS:** Zentral per Registrierungs-GPO deaktiviert (`NetbiosOptions = 2`), um unverschlüsselte Broadcast-Namensauflösungen zu verhindern.
+- **SMBv1-Protokoll:** Deaktivierung des veralteten SMBv1-Server-Dienstes per Registry-Key (`SMB1 = 0`), um Risiken durch bekannte Ransomware-Vektoren (z. B. EternalBlue) zu eliminieren.
+
+![NetBios](screenshots/07_NetBIos_SMBv1.png)
 
 
 
