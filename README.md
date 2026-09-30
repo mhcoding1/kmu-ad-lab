@@ -1,51 +1,92 @@
-# 🏢 Enterprise Active Directory Home Lab
+# Enterprise Active Directory Home Lab (Windows Server 2022)
 
-> **Projekt-Ziel:** Praxisnahe Simulation einer sicheren, gehärteten Microsoft Active Directory-Infrastruktur für ein virtuelles KMU (15+ Mitarbeiter) zur Demonstration von On-Premises-Systemadministration, GPO-Governance und Security-Hardening.
+>  Praxisnahe Simulation einer sicheren, gehärteten Microsoft Active Directory-Infrastruktur für ein virtuelles KMU (15+ Mitarbeiter) zur Demonstration von On-Premises-Systemadministration, GPO-Governance und Security-Hardening.
 
----
 
-## 📐 1. Lab-Architektur & Netzwerk-Design
 
-Die gesamte Infrastruktur läuft in einem isolierten VirtualBox NAT-Netzwerk. Das Lab ist strikt vom privaten Heimnetzwerk getrennt und ohne externe DNS-Weiterleiter vollständig vom Internet isoliert, um eine sichere Umgebung für Tests und Governance-Regeln zu gewährleisten.
-
-### Netzwerk-Spezifikation
-* **VirtualBox Network Type:** NAT / NAT-Netzwerk `AD_Netzwerk`
-* **Subnetz:** `10.0.2.0/24`
-* **Gateway:** `10.0.2.1`
-
-### Virtuelle Maschinen (Nodes)
-* **`DC01` (Domain Controller & Primary Services)**
-  * **OS:** Windows Server 2022
-  * **IP-Adresse:** `10.0.2.15` (Statisch)
-  * **DNS:** `127.0.0.1` (Self-Referencing)
-  * **Rollen:** AD DS, DNS, DHCP
-* **`CLI01` (Enterprise Client Workstation)**
-  * **OS:** Windows 11 Enterprise
-  * **IP-Adresse:** Dynamisch via DHCP (`DC01`) / Subnetz `10.0.2.x`
-  * **DNS:** `10.0.2.15` (`DC01`)
+![Lab-Architektur Übersicht](screenshots/01-aduc-structure.png)
 
 ---
 
-## 🏛️ 2. Active Directory – OU-Struktur & Objekte
+## Umgebungsübersicht
 
-Die Domäne **`LAB.local`** wurde über den **Server Manager** initialisiert. Um das Standard-Container-Chaos zu vermeiden, wurde eine strukturierte **Organizational Unit (OU)**-Hierarchie zur sauberen Verwaltung von Benutzern, Gruppen und Gruppenrichtlinien (GPOs) implementiert.
+- **Domäne:** `LAB.local`
+- **Domain Controller:** `DC01` (10.0.2.15) unter Windows Server 2022
+- **Mitglieds-Client:** `CLI01` unter Windows 10/11 Enterprise
+- **Netzwerk-Isolierung:** Isoliertes VirtualBox NAT-Netzwerk (`10.0.2.0/24`) ohne externe DNS-Weiterleitungen
+- **Verwaltungsmodell:** AGDLP-Prinzip mit vorbereiteter Struktur für gestaffelte Administration (Tiering-Modell)
 
-### OU-Hierarchie
+---
+
+## OU- & Identitäten-Struktur (Organizational Units)
+
+Die Active Directory-Umgebung nutzt eine strukturierte OU-Hierarchie auf Enterprise-Niveau (`KMU_Objects`), unterteilt in Identitäten, administrative Grenzen und verwaltete Geräte.
+
+### Active Directory Topologie
+- `KMU_Objects`
+  - `Admin_Accounts` *(Vorbereitete OU für zukünftiges Tiered Administration Model)*
+  - `Devices`
+    - `Servers`
+    - `Workstations`
+  - `Users`
+    - `Execs`
+    - `IT`
+    - `HR`
+    - `Finance`
+    - `Sales`
+    - `Contractors` *(Inklusive automatischem Ablaufdatum für externe Mitarbeiter)*
+
+![ADUC-Struktur & Abteilungsbenutzer](screenshots/01-aduc-structure.png)
+
+---
+
+## Automatisierung & Skript-Deployment
+
+Alle OUs, globalen Sicherheitsgruppen für die Abteilungen und Benutzerkonten wurden mithilfe von PowerShell-Skripten und einer strukturierten CSV-Datei vollautomatisch angelegt.
+
+### 1. Erzeugung der Testdaten (`scripts/00-Create-KMU-Users`)
+- Generiert automatisiert die Quelldatei `kmu_users.csv` inklusive UTF-8-Codierung.
+- Legt alle 17 Test-Mitarbeiter mit Vor-/Nachnamen, Abteilungen, Rollen, Vorgesetzten und Ablaufdaten für externe Contractors fest.
+
+### 2. Erstellung der OU- & Gruppenstruktur (`scripts/01-Create-OUs.ps1`)
+- Erstellt die Haupt-OU `KMU_Objects` sowie alle benötigten Unter-OUs.
+- Aktiviert den Schutz vor versehentlicher Löschung (`-ProtectedFromAccidentalDeletion $true`).
+- Erstellt automatisch globale Abteilungsgruppen (z. B. `gg_IT_Users`, `gg_HR_Users`) nach der **AGDLP**-Namenskonvention.
+
+### 3. Automatisierter Benutzer-Import (`scripts/02-Import-Users.ps1`)
+- Liest alle Benutzerattribute aus `scripts/kmu_users.csv` ein.
+- Generiert standardisierte Anmeldenamen (`hmueller`, `fschmid`) inklusive Ersetzung deutscher Umlaute.
+- Setzt sichere Initialpasswörter, fordert eine Passwortänderung bei der ersten Anmeldung und weist Benutzer direkt ihren Abteilungsgruppen zu.
+- Steuert den Lebenszyklus externer Dienstleister (Contractors) durch automatisches Setzen von Konto-Ablaufdaten.
+
+---
+
+## Sicherheits-Härtung & Gruppenrichtlinien (GPO)
+
+Die Sicherheitseinstellungen der Domäne basieren auf Microsoft Security Best Practices:
+
+1. **Vorbereitung Tiered Administration:** Die OU-Struktur (`Admin_Accounts`) ist für die zukünftige Trennung von administrativen Ebenen (Tier 0 / Tier 1 / Tier 2) vorkonfiguriert.
+2. **Gehärtete Default Domain Policy:** Erzwingt komplexe Passwörter, Kontosperrungsrichtlinien und begrenzte Kerberos-Ticket-Laufzeiten.
+3. **Ausblick / Next Steps:** Implementierung von Windows LAPS (Local Administrator Password Solution) sowie Zuordnung dedizierter Tier-Admins inkl. Authentication Policies & User Rights Assignment GPOs.
+
+![Gruppenrichtlinienverwaltung Übersicht](screenshots/02-gpo-overview.png)
+
+![Windows LAPS Attribut-Überprüfung](screenshots/03-laps-functional.png)
+
+---
+
+## Repository-Struktur
+
 ```text
-LAB.local/
-└── 🏢 KMU_Objects/
-    ├── 👥 Users/
-    │   ├── 👔 Execs
-    │   ├── 💻 IT
-    │   ├── 📋 HR
-    │   ├── 💰 Finance
-    │   ├── 📈 Sales
-    │   └── ⏳ Contractors
-    ├── 🖥️ Devices/
-    │   ├── 🛠️ Workstations
-    │   └── 🖥️ Member_Servers
-    └── 🔐 Admin_Accounts/
-        ├── 👑 Tier_0
-        ├── 🖥️ Tier_1
-        └── 🛠️ Tier_2
-
+Enterprise-AD-HomeLab/
+├── README.md
+├── LICENSE
+├── scripts/
+│   ├── 00-Generate-UsersCSV.ps1
+│   ├── 01-Create-OUs.ps1
+│   ├── 02-Import-Users.ps1
+│   └── kmu_users.csv
+└── screenshots/
+    ├── 01-aduc-structure.png
+    ├── 02-gpo-overview.png
+    └── 03-laps-functional.png
