@@ -1,79 +1,123 @@
-# Enterprise Active Directory Home Lab (Windows Server 2022)
-
->  Praxisnahe Simulation einer sicheren, gehärteten Microsoft Active Directory-Infrastruktur für ein virtuelles KMU (15+ Mitarbeiter) zur Demonstration von On-Premises-Systemadministration, GPO-Governance und Security-Hardening.
+# Enterprise Active Directory Lab (Windows Server 2022)
 
 
 
-![Lab-Architektur Übersicht](screenshots/01-aduc-structure.png)
+### Active Directory Topologie & Identitäten-Hierarchie
 
----
+
+Simulation einer sicheren, gehärteten Microsoft Active Directory-Infrastruktur für ein virtuelles KMU (15+ Mitarbeiter) zur Demonstration von On-Premises-Systemadministration, GPO-Governance und Security-Hardening.
+
+
+![KMU_Übersicht](screenshots/00_Overview.png)
+*Visualisierung der OU-Struktur, der zugewiesenen AGDLP-Sicherheitsgruppen sowie exemplarischer User.*
+
+
 
 ## Umgebungsübersicht
 
 - **Domäne:** `LAB.local`
 - **Domain Controller:** `DC01` (10.0.2.15) unter Windows Server 2022
-- **Mitglieds-Client:** `CLI01` unter Windows 10/11 Enterprise
+- **Mitglieds-Client:** `CLI01` unter Windows 11 Enterprise
 - **Netzwerk-Isolierung:** Isoliertes VirtualBox NAT-Netzwerk (`10.0.2.0/24`) ohne externe DNS-Weiterleitungen
-- **Verwaltungsmodell:** AGDLP-Prinzip mit vorbereiteter Struktur für gestaffelte Administration (Tiering-Modell)
+- **Verwaltungsmodell:** AGDLP-Prinzip mit vorbereiteter Struktur für gestaffelte Administration
 
----
 
-## OU- & Identitäten-Struktur (Organizational Units)
+## OU-Struktur & Unternehmensaufbau
+Die Active Directory-Topologie bildet ein klassisches KMU ab und ist unterhalb der Haupt-OU `KMU_Objects` zur einfachen Verwaltung und Härtung in drei Kernbereiche unterteilt:
 
-Die Active Directory-Umgebung nutzt eine strukturierte OU-Hierarchie auf Enterprise-Niveau (`KMU_Objects`), unterteilt in Identitäten, administrative Grenzen und verwaltete Geräte.
+**Admin Accounts:** Isoliert privilegierte Konten als Vorbereitung für ein Tiered Administration Model.
 
-### Active Directory Topologie
-- `KMU_Objects`
-  - `Admin_Accounts` *(Vorbereitete OU für zukünftiges Tiered Administration Model)*
-  - `Devices`
-    - `Servers`
-    - `Workstations`
-  - `Users`
-    - `Execs`
-    - `IT`
-    - `HR`
-    - `Finance`
-    - `Sales`
-    - `Contractors` *(Inklusive automatischem Ablaufdatum für externe Mitarbeiter)*
+**Devices:** Getrennt nach Servers und Workstations für zielgerichtete Gruppenrichtlinien (GPOs).
+
+**Users:** Nach Fachbereichen strukturiert (Execs, IT, HR, Finance, Sales, Contractors).
+
+Diese Aufteilung ermöglicht die automatisierte Rechtevergabe nach dem AGDLP-Prinzip (z. B. gg_IT_Users). Für externe `Contractors` wird zudem ein automatisches Ablaufdatum erzwungen, um Sicherheitsrisiken durch verwaiste Zugänge zu vermeiden.
 
 ![ADUC-Struktur & Abteilungsbenutzer](screenshots/01-aduc-structure.png)
 
----
 
 ## Automatisierung & Skript-Deployment
 
-Alle OUs, globalen Sicherheitsgruppen für die Abteilungen und Benutzerkonten wurden mithilfe von PowerShell-Skripten und einer strukturierten CSV-Datei vollautomatisch angelegt.
+Alle OUs, globalen Sicherheitsgruppen für die Abteilungen und Benutzerkonten wurden mithilfe von PowerShell-Skripten und einer strukturierten CSV-Datei vollautomatisch angelegt. Die jeweiligen Skripte sind im Ordner `\scripts` hinterlegt.
 
-### 1. Erzeugung der Testdaten (`scripts/00-Create-KMU-Users`)
-- Generiert automatisiert die Quelldatei `kmu_users.csv` inklusive UTF-8-Codierung.
-- Legt alle 17 Test-Mitarbeiter mit Vor-/Nachnamen, Abteilungen, Rollen, Vorgesetzten und Ablaufdaten für externe Contractors fest.
+*Hinweis: Dieses Lab wurde eigenständig geplant, aufgebaut und getestet. Zur Effizienzsteigerung wurden jedoch bei der Skripterstellung KI-Tools (Gemini & Claude) als Copilot für die nachfolgenden Skripte genutzt.*
 
-### 2. Erstellung der OU- & Gruppenstruktur (`scripts/01-Create-OUs.ps1`)
+### 1. Erzeugung der Testdaten
+- [\scripts\00-Create-KMU-Users.ps1](scripts\00-Create-KMU-Users.ps1)
+- Generiert automatisiert die Quelldatei `kmu_users.csv`.
+- Legt 17 Test-Mitarbeiter mit Vor-/Nachnamen, Abteilungen, Rollen, Vorgesetzten und Ablaufdaten für externe Contractors fest.
+
+### 2. Erstellung der OU- & Gruppenstruktur
+- [\scripts\01-Create-OUs.ps1](`scripts/01-Create-OUs.ps1`)
 - Erstellt die Haupt-OU `KMU_Objects` sowie alle benötigten Unter-OUs.
 - Aktiviert den Schutz vor versehentlicher Löschung (`-ProtectedFromAccidentalDeletion $true`).
 - Erstellt automatisch globale Abteilungsgruppen (z. B. `gg_IT_Users`, `gg_HR_Users`) nach der **AGDLP**-Namenskonvention.
 
-### 3. Automatisierter Benutzer-Import (`scripts/02-Import-Users.ps1`)
+### 3. Automatisierter Benutzer-Import
+- [\scripts\02-Import-Users.ps1](`scripts/02-Import-Users.ps1`)
 - Liest alle Benutzerattribute aus `scripts/kmu_users.csv` ein.
 - Generiert standardisierte Anmeldenamen (`hmueller`, `fschmid`) inklusive Ersetzung deutscher Umlaute.
-- Setzt sichere Initialpasswörter, fordert eine Passwortänderung bei der ersten Anmeldung und weist Benutzer direkt ihren Abteilungsgruppen zu.
+- Setzt Initialpasswörter, fordert eine Passwortänderung bei der ersten Anmeldung und weist Benutzer direkt ihren Gruppen zu.
 - Steuert den Lebenszyklus externer Dienstleister (Contractors) durch automatisches Setzen von Konto-Ablaufdaten.
 
----
 
 ## Sicherheits-Härtung & Gruppenrichtlinien (GPO)
 
 Die Sicherheitseinstellungen der Domäne basieren auf Microsoft Security Best Practices:
 
-1. **Vorbereitung Tiered Administration:** Die OU-Struktur (`Admin_Accounts`) ist für die zukünftige Trennung von administrativen Ebenen (Tier 0 / Tier 1 / Tier 2) vorkonfiguriert.
-2. **Gehärtete Default Domain Policy:** Erzwingt komplexe Passwörter, Kontosperrungsrichtlinien und begrenzte Kerberos-Ticket-Laufzeiten.
-3. **Ausblick / Next Steps:** Implementierung von Windows LAPS (Local Administrator Password Solution) sowie Zuordnung dedizierter Tier-Admins inkl. Authentication Policies & User Rights Assignment GPOs.
+### 1. **Tiered Administration:**
+Unterhalb von `Admin_Accounts` wurden dedizierte administrative Verwaltungsebenen angelegt (`Tier0`, `Tier1`, `Tier2`), um administrative Privilegien strikt zu isolieren:
 
-![Gruppenrichtlinienverwaltung Übersicht](screenshots/02-gpo-overview.png)
+- **Dual-Account-Strategie:** Reguläre Alltags-Accounts (z. B. `fschmid` in `Users/IT`) werden ausschließlich für E-Mail, Dokumente und Standardaufgaben genutzt und besitzen **keine** administrativen Rechte.
+- **Dedizierte Admin-Identitäten:** Für administrative Tätigkeiten existieren getrennte Konten auf den jeweiligen Tiers. 
+- **Sicherheitsbegründung:** Diese Trennung verhindert, dass bei einer Kompromittierung eines Alltags-Accounts  Administrationsrechte offengelegt werden.
 
-![Windows LAPS Attribut-Überprüfung](screenshots/03-laps-functional.png)
 
----
+![Tiered_Admins](screenshots\02_Tiered_Admins.png)
+
+
+### 2. Gehärtete Default Domain Policy
+Über die `Default Domain Policy` sind folgende Security Baselines domänenweit erzwungen:
+
+#### **Kennwortrichtlinien:**
+   - **Komplexität:** Aktiviert (erzwingt Kombination aus Groß-/Kleinbuchstaben, Zahlen und Sonderzeichen).
+  - **Mindestlänge:** Erhöht auf 10 Zeichen (gemäß Enterprise Best Practice).
+  - **Kennwortchronik:** Speicherung der letzten 24 Passwörter zur Verhinderung von Passwort-Wiederverwendung.
+
+![Kennwortrichtlinien](screenshots\03_Kennwortrichtlinien.png)
+
+#### **Kontosperrungsrichtlinien:**
+   - **Kontosperrungsschwelle:** Automatische Sperrung nach 5 fehlerhaften Anmeldeversuchen (Schutz vor Brute-Force-Angriffen).
+  - **Sperr- & Rücksetzdauer:** Auf 15 Minuten festgelegt.
+
+![Kontosperrungsrichtlinien](screenshots\04_KontoSperrungsRichtlinien.png)
+
+
+#### **Kerberos-Richtlinien:**
+- **Ticket-Lebensdauer:** Maximale Gültigkeit von Kerberos-TGTs (Ticket Granting Tickets) auf 10 Stunden begrenzt.
+
+![Kerberosrichtlinien](screenshots\05_Kerberosrichtlinien.png)
+
+
+### 3. 
+
+
+
+
+
+
+
+
+### 3. **Ausblick / Next Steps:**
+- Implementierung von Windows LAPS (Local Administrator Password Solution)
+- Zuordnung dedizierter Tier-Admins inkl. Authentication Policies & User Rights Assignment GPOs.
+
+
+
+
+
+
+
 
 ## Repository-Struktur
 

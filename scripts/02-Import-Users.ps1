@@ -15,7 +15,7 @@ $csvPath    = "C:\LabSetup\kmu_users.csv"
 $domainInfo = Get-ADDomain
 $domain     = $domainInfo.DNSRoot
 $domainDN   = $domainInfo.DistinguishedName
-$baseOU     = "OU=Users,OU=KMU_Objects,$domainDN"
+$baseOU     = "OU=Users,OU=KMU_Objects,$domainDN"   
 
 # Standard-Initialpasswort (nur Lab!)
 $defaultPassword = ConvertTo-SecureString "Start1234!2026" -AsPlainText -Force
