@@ -90,7 +90,7 @@ Unterhalb von `Admin_Accounts` wurden dedizierte administrative Verwaltungsebene
    - **Kontosperrungsschwelle:** Automatische Sperrung nach 5 fehlerhaften Anmeldeversuchen (Schutz vor Brute-Force-Angriffen).
   - **Sperr- & Rücksetzdauer:** Auf 15 Minuten festgelegt.
 
-![Kontosperrungsrichtlinien](screenshots\04_KontoSperrungsRichtlinien.png)
+![Kontosperrungsrichtlinien](screenshots/04_KontoSperrungsRichtlinien.png)
 
 
 #### **Kerberos-Richtlinien:**
