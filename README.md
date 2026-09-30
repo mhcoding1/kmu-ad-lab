@@ -43,7 +43,7 @@ Alle OUs, globalen Sicherheitsgruppen für die Abteilungen und Benutzerkonten wu
 *Hinweis: Dieses Lab wurde eigenständig geplant, aufgebaut und getestet. Zur Effizienzsteigerung wurden jedoch bei der Skripterstellung KI-Tools (Gemini & Claude) als Copilot für die nachfolgenden Skripte genutzt.*
 
 ### 1. Erzeugung der Testdaten
-- [\scripts\00-Create-KMU-Users.ps1](scripts\00-Create-KMU-Users.ps1)
+- [\scripts\00-Create-KMU-Users.ps1](scripts/00-Create-KMU-Users.ps1)
 - Generiert automatisiert die Quelldatei `kmu_users.csv`.
 - Legt 17 Test-Mitarbeiter mit Vor-/Nachnamen, Abteilungen, Rollen, Vorgesetzten und Ablaufdaten für externe Contractors fest.
 
@@ -73,7 +73,7 @@ Unterhalb von `Admin_Accounts` wurden dedizierte administrative Verwaltungsebene
 - **Sicherheitsbegründung:** Diese Trennung verhindert, dass bei einer Kompromittierung eines Alltags-Accounts  Administrationsrechte offengelegt werden.
 
 
-![Tiered_Admins](screenshots\02_Tiered_Admins.png)
+![Tiered_Admins](screenshots/02_Tiered_Admins.png)
 
 
 ### 2. Gehärtete Default Domain Policy
@@ -84,7 +84,7 @@ Unterhalb von `Admin_Accounts` wurden dedizierte administrative Verwaltungsebene
   - **Mindestlänge:** Erhöht auf 10 Zeichen (gemäß Enterprise Best Practice).
   - **Kennwortchronik:** Speicherung der letzten 24 Passwörter zur Verhinderung von Passwort-Wiederverwendung.
 
-![Kennwortrichtlinien](screenshots\03_Kennwortrichtlinien.png)
+![Kennwortrichtlinien](screenshots/03_Kennwortrichtlinien.png)
 
 #### **Kontosperrungsrichtlinien:**
    - **Kontosperrungsschwelle:** Automatische Sperrung nach 5 fehlerhaften Anmeldeversuchen (Schutz vor Brute-Force-Angriffen).
@@ -96,7 +96,7 @@ Unterhalb von `Admin_Accounts` wurden dedizierte administrative Verwaltungsebene
 #### **Kerberos-Richtlinien:**
 - **Ticket-Lebensdauer:** Maximale Gültigkeit von Kerberos-TGTs (Ticket Granting Tickets) auf 10 Stunden begrenzt.
 
-![Kerberosrichtlinien](screenshots\05_Kerberosrichtlinien.png)
+![Kerberosrichtlinien](screenshots/05_Kerberosrichtlinien.png)
 
 
 ### 3. 
